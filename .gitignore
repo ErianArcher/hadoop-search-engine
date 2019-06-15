@@ -42,4 +42,7 @@ gradle-app.setting
 
 .gradle/
 build/
+.idea/
+!.idea/artifacts
+!.idea/deployment.xml
 out/
