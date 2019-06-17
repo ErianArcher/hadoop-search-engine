@@ -67,7 +67,7 @@ public class HBaseOperator {
         String cf = dataClass.getName();
 
         // Fields
-        Field[] fields = dataClass.getFields();
+        Field[] fields = dataClass.getDeclaredFields();
         List<String> cf_qualifiers = new ArrayList<>(fields.length);
         for (Field field: fields) {
             cf_qualifiers.add(field.getName());
@@ -352,7 +352,7 @@ public class HBaseOperator {
      * @return 数据的字符串
      */
     private String bytes2String(byte[] bytes, int start, int length) {
-        return Bytes.toString(Arrays.copyOfRange(bytes, start, length));
+        return Bytes.toString(Arrays.copyOfRange(bytes, start, start+length));
     }
 
     /**
