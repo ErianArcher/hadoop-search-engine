@@ -126,6 +126,25 @@ public class HBaseOperator {
         }
     }
 
+    public void setColumnValue(String tableName, String rowKey, String familyName, String column1, String value1){
+        Table table=null;
+        try {
+            // 获取表
+            table=getTable(tableName);
+            // 设置rowKey
+            Put put = new Put(Bytes.toBytes(rowKey));
+            put.addColumn(Bytes.toBytes(familyName), Bytes.toBytes(column1), Bytes.toBytes(value1));
+
+            table.put(put);
+            log.debug("add data Success!");
+        }catch (IOException e) {
+            log.error(MessageFormat.format("为表的某个单元格赋值失败,tableName:{0},rowKey:{1},familyName:{2},column:{3}"
+                    ,tableName,rowKey,familyName,column1),e);
+        }finally {
+            close(null,null,table);
+        }
+    }
+
     public Map<String,Map<String,String>> getResultScanner(String tableName){
         Scan scan = new Scan();
         return this.queryData(tableName,scan);
@@ -268,6 +287,57 @@ public class HBaseOperator {
         }
 
         return str;
+    }
+
+    public boolean createTable(String tableName, List<String> columnFamily) {
+        Admin admin = null;
+        try {
+            admin = conn.getAdmin();
+
+            List<ColumnFamilyDescriptor> familyDescriptors = new ArrayList<>(columnFamily.size());
+
+            columnFamily.forEach(cf -> {
+                familyDescriptors.add(ColumnFamilyDescriptorBuilder.newBuilder(Bytes.toBytes(cf)).build());
+            });
+
+            TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(TableName.valueOf(tableName))
+                    .setColumnFamilies(familyDescriptors)
+                    .build();
+
+            if (admin.tableExists(TableName.valueOf(tableName))) {
+                log.debug("table Exists!");
+            } else {
+                admin.createTable(tableDescriptor);
+                log.debug("create table Success!");
+            }
+        } catch (IOException e) {
+            log.error(MessageFormat.format("创建表{0}失败", tableName), e);
+            return false;
+        } finally {
+            close(admin, null, null);
+        }
+
+        return true;
+    }
+
+    public boolean deleteTable(String tableName){
+        Admin admin = null;
+        try {
+            admin = conn.getAdmin();
+
+            if(admin.tableExists(TableName.valueOf(tableName))){
+                admin.disableTable(TableName.valueOf(tableName));
+                admin.deleteTable(TableName.valueOf(tableName));
+                log.debug(tableName + "is deleted!");
+            }
+        }catch (IOException e) {
+            log.error(MessageFormat.format("删除指定的表失败,tableName:{0}"
+                    ,tableName),e);
+            return false;
+        }finally {
+            close(admin,null,null);
+        }
+        return true;
     }
 
     private byte[] hashRowKey(String rowKey) {
