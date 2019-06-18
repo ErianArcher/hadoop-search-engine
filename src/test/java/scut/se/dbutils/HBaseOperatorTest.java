@@ -1,8 +1,10 @@
+package scut.se.dbutils;
+
 import org.junit.After;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import scut.se.dbutils.HBaseOperator;
+import scut.se.entity.TestEntity;
 
 import java.lang.reflect.Field;
 import java.text.MessageFormat;

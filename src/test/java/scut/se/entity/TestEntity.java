@@ -1,3 +1,5 @@
+package scut.se.entity;
+
 public class TestEntity {
     private String testCol1;
     private String testCol2;

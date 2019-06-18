@@ -1,3 +1,5 @@
+package scut.se;
+
 import java.io.IOException;
 import java.util.StringTokenizer;
 

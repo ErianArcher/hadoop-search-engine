@@ -1,4 +1,5 @@
-import org.apache.hadoop.HadoopIllegalArgumentException;
+package scut.se.dbutils;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CompareOperator;
