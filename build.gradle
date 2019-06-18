@@ -2,7 +2,7 @@ plugins {
     id 'java'
 }
 
-group 'scut.se.216'
+group 'scut.se.lab216'
 version '1.0-SNAPSHOT'
 
 sourceCompatibility = 1.8
