@@ -290,6 +290,21 @@ public class HBaseOperator {
         return str;
     }
 
+    public boolean tableExists(String tableName) {
+        Admin admin = null;
+        boolean exist = false;
+        try {
+            admin = conn.getAdmin();
+            if (admin.tableExists(TableName.valueOf(tableName))) {
+                exist = true;
+            }
+        } catch (IOException e) {
+            log.error("Error on getting admin.", e);
+        }
+
+        return exist;
+    }
+
     public boolean createTable(String tableName, List<String> columnFamily) {
         Admin admin = null;
         try {
