@@ -9,13 +9,33 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
-    flatDir {
-        dirs '/home/hadoop/hadoop/share'
-        dirs '/home/hadoop/hbase/lib'
-    }
 }
 
 dependencies {
-    compile fileTree(include: '*.jar', dir: '/home/hadoop/hadoop/share/hadoop')
-    compile fileTree(include: '*.jar', dir: '/home/hadoop/hbase/lib')
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'org.apache.hadoop', name: 'hadoop-common', version:'3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-hdfs', version: '3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-yarn-common', version: '3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-minicluster', version: '3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-mapreduce-client-core', version:'3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-mapreduce-client-jobclient', version: '3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-mapreduce-client-app', version: '3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-mapreduce-client-shuffle', version: '3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-mapreduce-client-common', version: '3.1.2'
+    compile group: 'org.apache.hadoop', name: 'hadoop-client', version: '3.1.2'
+    compile group: 'org.apache.hbase', name: 'hbase-client', version: '2.0.5'
+    compile group: 'org.apache.hbase', name: 'hbase', version: '2.0.5'
+    compile group:'org.apache.logging.log4j', name:'log4j-core', version: '2.11.1'
+    implementation 'com.google.code.gson:gson:2.8.5'
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Search engine',
+                'Implementation-Version': version,
+                'Main-Class': 'scut.se.mapred.InvertedIndicesGenerator'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
 }
