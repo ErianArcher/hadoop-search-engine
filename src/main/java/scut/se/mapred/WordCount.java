@@ -1,4 +1,4 @@
-package scut.se;
+package scut.se.mapred;
 
 import java.io.IOException;
 import java.util.StringTokenizer;
