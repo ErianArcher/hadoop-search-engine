@@ -1,12 +1,14 @@
 package scut.se.entity;
 
+import java.util.List;
+
 public class PageJson {
 
     private String url;
     private String title;
-    private String words;
+    private List<String> words;
     private String html;
-    private String fileName;
+    private String filename;
 
     public PageJson() {
     }
@@ -27,11 +29,11 @@ public class PageJson {
         this.title = title;
     }
 
-    public String getWords() {
-        return words;
+    public List<String> getWords() {
+        return this.words;
     }
 
-    public void setWords(String words) {
+    public void setWords(List<String> words) {
         this.words = words;
     }
 
@@ -43,11 +45,11 @@ public class PageJson {
         this.html = html;
     }
 
-    public String getFileName() {
-        return fileName;
+    public String getFilename() {
+        return filename;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
+    public void setFilename(String filename) {
+        this.filename = filename;
     }
 }

@@ -2,8 +2,7 @@ package scut.se.mapred;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
@@ -13,8 +12,6 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hbase.thirdparty.com.google.gson.Gson;
-import scut.se.mapred.completefile.CompleteFileInputFormat;
-import scut.se.mapred.completefile.NonSplittableTextInputFormat;
 import scut.se.dbutils.HBaseOperator;
 import scut.se.dbutils.HTableUntil;
 import scut.se.dbutils.RowKeyGenerator;
@@ -22,6 +19,8 @@ import scut.se.entity.InvertedIndex;
 import scut.se.entity.PageContent;
 import scut.se.entity.PageInfo;
 import scut.se.entity.PageJson;
+import scut.se.mapred.completefile.CompleteFileInputFormat;
+import scut.se.mapred.completefile.NonSplittableTextInputFormat;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +34,7 @@ public class InvertedIndicesGenerator {
     private static final String TABLE_HI = "htmlinfo";
     private static final HBaseOperator op = HBaseOperator.getInstance();
 
-    public static class InvertedIndexMapper extends Mapper<NullWritable, BytesWritable, Text, Text> {
+    public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> {
         private Text filenameKey;
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -45,14 +44,21 @@ public class InvertedIndicesGenerator {
         }
 
         @Override
-        protected void map(NullWritable key, BytesWritable value, Context context) throws IOException, InterruptedException {
+        protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             String json = new String(value.copyBytes(), 0, value.getLength(), StandardCharsets.UTF_8);
             Gson gson = new Gson();
             PageJson pageJson = gson.fromJson(json, PageJson.class);
 
             // 准备写入HBase
-            PageInfo info = new PageInfo(pageJson.getUrl(), pageJson.getTitle(), pageJson.getFileName());
-            PageContent content = new PageContent(pageJson.getHtml(), pageJson.getWords());
+
+            PageInfo info = new PageInfo(pageJson.getUrl(), pageJson.getTitle(), pageJson.getFilename());
+            StringBuilder wordsInCSV = new StringBuilder();
+            for (String w :
+                    pageJson.getWords()) {
+                wordsInCSV.append(",");
+                wordsInCSV.append(w.trim().replaceAll(",", ""));
+            }
+            PageContent content = new PageContent(pageJson.getHtml(), wordsInCSV.substring(1));
             // 生成rowKey
             String rowKey = RowKeyGenerator.getUUID();
             op.insertOneRowTo(TABLE_HI, info, rowKey);
@@ -110,7 +116,7 @@ public class InvertedIndicesGenerator {
         }
 
         Configuration conf= new Configuration();
-        Job job = new Job(conf,"InvertedIndexJob");
+        Job job = Job.getInstance(conf,"InvertedIndexJob");
         //Defining the output key and value class for the mapper
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
@@ -124,11 +130,11 @@ public class InvertedIndicesGenerator {
         job.setOutputFormatClass(TextOutputFormat.class);
         Path outputPath = new Path(args[1]);
 
-        CompleteFileInputFormat.addInputPath(job, new Path(args[0]));
+        CompleteFileInputFormat.setInputPaths(job, new Path(args[0]));
 
         FileOutputFormat.setOutputPath(job, outputPath);
         //deleting the output path automatically from hdfs so that we don't have delete it explicitly
-        outputPath.getFileSystem(conf).delete(outputPath);
+        outputPath.getFileSystem(conf).deleteOnExit(outputPath);
         //exiting the job only if the flag value becomes false
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
