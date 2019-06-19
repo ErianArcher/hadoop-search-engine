@@ -15,6 +15,7 @@ import org.apache.hbase.thirdparty.com.google.gson.Gson;
 import scut.se.dbutils.HBaseOperator;
 import scut.se.dbutils.HTableUntil;
 import scut.se.dbutils.RowKeyGenerator;
+import scut.se.dbutils.TableNameEnum;
 import scut.se.entity.InvertedIndex;
 import scut.se.entity.PageContent;
 import scut.se.entity.PageInfo;
@@ -29,9 +30,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static scut.se.dbutils.TableNameEnum.TABLE_HI;
+import static scut.se.dbutils.TableNameEnum.TABLE_SE;
+
 public class InvertedIndicesGenerator {
-    private static final String TABLE_SE = "searchengine";
-    private static final String TABLE_HI = "htmlinfo";
     private static final HBaseOperator op = HBaseOperator.getInstance();
 
     public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> {
