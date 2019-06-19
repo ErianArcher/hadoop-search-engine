@@ -118,4 +118,8 @@ public class HBaseOperatorTest {
         String result = operator.getColumnValue(tableName, rowKey1, columnFamily, columns.get(0));
         assertEquals(testEntity1.getTestCol1(), result);
     }
+
+    @Test
+    public void getColumnFamilyPOJOByRowKey() {
+    }
 }
