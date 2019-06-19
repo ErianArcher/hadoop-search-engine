@@ -11,12 +11,13 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
-public class CompleteFileRecordReader extends RecordReader<NullWritable, BytesWritable>{
+public class CompleteFileRecordReader extends RecordReader<LongWritable, Text>{
 
     private FileSplit fileSplit;
     private Configuration conf;
-    private BytesWritable value = new BytesWritable();
+    private Text value = new Text();
     private boolean processed = false;
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -33,7 +34,7 @@ public class CompleteFileRecordReader extends RecordReader<NullWritable, BytesWr
             try {
                 in = fs.open(file);
                 IOUtils.readFully(in, contents, 0, contents.length);
-                value.set(contents, 0, contents.length);
+                value.set(new String(contents, 0, value.getLength(), StandardCharsets.UTF_8));
             } finally {
                 IOUtils.closeStream(in);
             }
@@ -43,11 +44,11 @@ public class CompleteFileRecordReader extends RecordReader<NullWritable, BytesWr
         return false;
     }
     @Override
-    public NullWritable getCurrentKey() throws IOException, InterruptedException {
-        return NullWritable.get();
+    public LongWritable getCurrentKey() throws IOException, InterruptedException {
+        return new LongWritable();
     }
     @Override
-    public BytesWritable getCurrentValue() throws IOException, InterruptedException {
+    public Text getCurrentValue() throws IOException, InterruptedException {
         return value;
     }
     @Override
