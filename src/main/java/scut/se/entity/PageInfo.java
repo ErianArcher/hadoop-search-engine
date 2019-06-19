@@ -7,6 +7,9 @@ public class PageInfo {
     private String title;
     private String uri;
 
+    public PageInfo() {
+    }
+
     public PageInfo(String url, String title, String uri) {
         this.url = url;
         this.title = title;

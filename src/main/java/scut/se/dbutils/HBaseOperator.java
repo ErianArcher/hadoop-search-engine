@@ -68,31 +68,15 @@ public class HBaseOperator {
         String cf = dataClass.getName();
 
         // Fields
-        Field[] fields = dataClass.getDeclaredFields();
-        List<String> cf_qualifiers = new ArrayList<>(fields.length);
-        for (Field field: fields) {
-            cf_qualifiers.add(field.getName());
-        }
+        List<String> cf_qualifiers = getClassFields(dataClass);
 
         // Retrieve all methods which are for get fields.
-        Map<String, Method> getMethods = Arrays.stream(dataClass.getMethods())
-                .filter((m) -> m.getName().contains("get"))
-                .filter(m -> m.getParameterCount() == 0)  // No parameters
-                .flatMap(gm -> {
-                    Map<String, Method> mapping = new HashMap<>(1);
-                    mapping.put(gm.getName(), gm);
-                    return mapping.entrySet().stream();
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<String, Method> getMethods = getGetMethodsOfFields(dataClass);
 
         // Get datum of fields
         Map<String, String> fieldName2Data = new HashMap<>(cf_qualifiers.size());
         cf_qualifiers.forEach(cf_qualifier -> {
-            StringBuffer sb = new StringBuffer();
-            sb.append("get");
-            sb.append(Character.toUpperCase(cf_qualifier.substring(0, 1).toCharArray()[0]));
-            sb.append(cf_qualifier.substring(1));
-            String getMethodName = sb.toString();
+            String getMethodName = xetterMethodNameOf(cf_qualifier, "get");
 
             Method getCf_qualifierData = getMethods.get(getMethodName);
             if (getCf_qualifierData == null) return ; // 没找到该方法时跳过
@@ -125,6 +109,46 @@ public class HBaseOperator {
         } finally {
             close(null, null, table);
         }
+    }
+
+    private String xetterMethodNameOf(String filedName, String xetter) {
+        StringBuffer sb = new StringBuffer();
+        sb.append(xetter);
+        sb.append(Character.toUpperCase(filedName.substring(0, 1).toCharArray()[0]));
+        sb.append(filedName.substring(1));
+        return sb.toString();
+    }
+
+    private Map<String, Method> getGetMethodsOfFields(Class dataClass) {
+        return Arrays.stream(dataClass.getMethods())
+                .filter((m) -> m.getName().contains("get"))
+                .filter(m -> m.getParameterCount() == 0)  // No parameters
+                .flatMap(gm -> {
+                    Map<String, Method> mapping = new HashMap<>(1);
+                    mapping.put(gm.getName(), gm);
+                    return mapping.entrySet().stream();
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Map<String, Method> getSetMethodsOfFields(Class dataClass) {
+        return Arrays.stream(dataClass.getMethods())
+                .filter((m) -> m.getName().contains("set"))
+                .flatMap(sm -> {
+                    Map<String, Method> mapping = new HashMap<>(1);
+                    mapping.put(sm.getName(), sm);
+                    return mapping.entrySet().stream();
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private List<String> getClassFields(Class dataClass) {
+        Field[] fields = dataClass.getDeclaredFields();
+        List<String> cf_qualifiers = new ArrayList<>(fields.length);
+        for (Field field: fields) {
+            cf_qualifiers.add(field.getName());
+        }
+        return cf_qualifiers;
     }
 
     public void setColumnValue(String tableName, String rowKey, String familyName, String column1, String value1){
@@ -256,6 +280,40 @@ public class HBaseOperator {
         }
 
         return result;
+    }
+
+    public <T> T getColumnFamilyPOJOByRowKey(String tableName, String rowKey, Class<T> clz) {
+        T t = null;
+        try {
+            t = clz.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
+            log.error("实例化POJO失败", e);
+        }
+
+        Map<String, String> res = getRowData(tableName, rowKey);
+        String cf = clz.getName();
+
+        // Fields
+        List<String> cf_qualifiers = getClassFields(clz);
+
+        // Retrieve all methods which are for get fields.
+        Map<String, Method> setMethods = getSetMethodsOfFields(clz);
+
+        for (String qualifier :
+                cf_qualifiers) {
+            Method setMethod = setMethods.get(xetterMethodNameOf(qualifier, "set"));
+            String resCol = res.get(qualifier);
+            if (resCol == null) resCol = new String("");
+            if (setMethod != null) {
+                try {
+                    setMethod.invoke(t, resCol);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    log.error(MessageFormat.format("调用{0}的setter函数时失败", qualifier), e);
+                }
+            }
+        }
+
+        return t;
     }
 
     /**

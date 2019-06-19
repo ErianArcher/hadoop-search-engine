@@ -1,17 +1,20 @@
 package scut.se.entity;
 
-import java.util.Arrays;
+import scut.se.dbutils.HTableUntil;
+
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+
 
 public class PageContent {
     private List<String> words;
     private String html;
 
+    public PageContent() {
+    }
+
     public PageContent(String html, String wordsInCSV) {
-        this.words = Arrays.stream(wordsInCSV.split(","))
-                .map(String::trim).collect(Collectors.toList());
+        this.words = HTableUntil.convertStrInCSV2List(wordsInCSV);
         this.html = html;
     }
 
@@ -19,8 +22,8 @@ public class PageContent {
         return words;
     }
 
-    public void setWords(List<String> words) {
-        this.words = words;
+    public void setWords(String words) {
+        this.words = HTableUntil.convertStrInCSV2List(words);
     }
 
     public String getHtml() {

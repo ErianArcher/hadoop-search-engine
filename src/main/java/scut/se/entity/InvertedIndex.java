@@ -1,20 +1,22 @@
 package scut.se.entity;
 
-import java.util.Arrays;
+import scut.se.dbutils.HTableUntil;
+
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class InvertedIndex {
     private String word;
     private List<String> htmlNOs;
     private List<Integer> counts;
 
+    public InvertedIndex() {
+    }
+
     public InvertedIndex(String word, String htmlNOsInCSV, String countsInCSV) {
         this.word = word;
-        this.htmlNOs = Arrays.stream(htmlNOsInCSV.split(",")).map(String::trim).collect(Collectors.toList());
-        this.counts = Arrays.stream(countsInCSV.split(",")).map(String::trim)
-                .map(Integer::parseInt).collect(Collectors.toList());
+        this.htmlNOs = HTableUntil.convertStrInCSV2List(htmlNOsInCSV);
+        this.counts = HTableUntil.convertIntInCSV2List(countsInCSV);
     }
 
     public String getWord() {
@@ -29,16 +31,16 @@ public class InvertedIndex {
         return htmlNOs;
     }
 
-    public void setHtmlNOs(List<String> htmlNOs) {
-        this.htmlNOs = htmlNOs;
+    public void setHtmlNOs(String htmlNOs) {
+        this.htmlNOs = HTableUntil.convertStrInCSV2List(htmlNOs);
     }
 
     public List<Integer> getCounts() {
         return counts;
     }
 
-    public void setCounts(List<Integer> counts) {
-        this.counts = counts;
+    public void setCounts(String counts) {
+        this.counts = HTableUntil.convertIntInCSV2List(counts);
     }
 
     @Override
