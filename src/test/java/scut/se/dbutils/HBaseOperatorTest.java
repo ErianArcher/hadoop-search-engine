@@ -3,18 +3,15 @@ package scut.se.dbutils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import scut.se.dbutils.HBaseOperator;
 import scut.se.entity.TestEntity;
 
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class HBaseOperatorTest {
 
@@ -55,6 +52,8 @@ public class HBaseOperatorTest {
         columnFamily = cls.getName();
         columns = Arrays.stream(cls.getDeclaredFields()).map(Field::getName).collect(Collectors.toList());
         operator.createTable(tableName, Collections.singletonList(columnFamily));
+        operator.insertOneRowTo(tableName, testEntity1, rowKey1);
+        operator.insertOneRowTo(tableName, testEntity2, rowKey2);
     }
 
     @After
@@ -64,6 +63,13 @@ public class HBaseOperatorTest {
 
     @Test
     public void insertUpdateTest() {
+        // 重新初始化表格
+        for (String rowKey :
+                rowKeys) {
+            boolean deleteSuccess = operator.deleteRowByKey(tableName, rowKey);
+            assertTrue(deleteSuccess);
+        }
+
         // Assertion for single row
         operator.insertOneRowTo(tableName, testEntity1, rowKey1);
         Map<String, Map<String, String>> result1 = operator.getResultScanner(tableName);
@@ -80,8 +86,6 @@ public class HBaseOperatorTest {
 
     @Test
     public void getColValWithKeyword() {
-        operator.insertOneRowTo(tableName, testEntity1, rowKey1);
-        operator.insertOneRowTo(tableName, testEntity2, rowKey2);
         Map<String, Map<String, String>> result = operator.getColValWithKeyword(tableName, columnFamily,
                 columns.get(0), "value1");
         // Assertion
@@ -90,8 +94,6 @@ public class HBaseOperatorTest {
 
     @Test
     public void getColValWithKeywordInSubStr() {
-        operator.insertOneRowTo(tableName, testEntity1, rowKey1);
-        operator.insertOneRowTo(tableName, testEntity2, rowKey2);
         Map<String, Map<String, String>> result = operator.getColValWithKeywordInSubStr(tableName, columnFamily,
                 columns.get(0), "value3");
         // Assertion
@@ -102,8 +104,6 @@ public class HBaseOperatorTest {
 
     @Test
     public void getRowData() {
-        operator.insertOneRowTo(tableName, testEntity1, rowKey1);
-        operator.insertOneRowTo(tableName, testEntity2, rowKey2);
         Map<String, String> result = operator.getRowData(tableName, rowKey1);
         // Assertion
         for (Map.Entry<String, String> entry: result.entrySet()){
@@ -113,13 +113,15 @@ public class HBaseOperatorTest {
 
     @Test
     public void getColumnValue() {
-        operator.insertOneRowTo(tableName, testEntity1, rowKey1);
-        operator.insertOneRowTo(tableName, testEntity2, rowKey2);
         String result = operator.getColumnValue(tableName, rowKey1, columnFamily, columns.get(0));
         assertEquals(testEntity1.getTestCol1(), result);
     }
 
     @Test
     public void getColumnFamilyPOJOByRowKey() {
+        TestEntity res = operator.getColumnFamilyPOJOByRowKey(tableName, rowKey1, TestEntity.class);
+        assertEquals(testEntity1, res);
+        TestEntity resNull = operator.getColumnFamilyPOJOByRowKey(tableName, "nonExist", TestEntity.class);
+        assertTrue(Objects.isNull(resNull));
     }
 }

@@ -291,6 +291,8 @@ public class HBaseOperator {
         }
 
         Map<String, String> res = getRowData(tableName, rowKey);
+        if (res.isEmpty()) return null;
+
         String cf = clz.getName();
 
         // Fields
@@ -427,6 +429,36 @@ public class HBaseOperator {
      */
     private String bytes2String(byte[] bytes, int start, int length) {
         return Bytes.toString(Arrays.copyOfRange(bytes, start, start+length));
+    }
+
+    /**
+     * 根据rowKey 删除行
+     * @param tableName 表名
+     * @param rowKey 行键
+     * @return 是否删除成功
+     */
+    public boolean deleteRowByKey(String tableName, String rowKey) {
+        Table table=null;
+        Admin admin = null;
+        try {
+            admin = conn.getAdmin();
+
+            if(admin.tableExists(TableName.valueOf(tableName))){
+                // 获取表
+                table=getTable(tableName);
+                Delete delete = new Delete(Bytes.toBytes(rowKey));
+
+                table.delete(delete);
+                log.debug(MessageFormat.format("row({0}) is deleted!",rowKey));
+            }
+        }catch (IOException e) {
+            log.error(MessageFormat.format("删除指定的行失败,tableName:{0},rowKey:{1}"
+                    ,tableName,rowKey),e);
+            return false;
+        }finally {
+            close(admin,null,table);
+        }
+        return true;
     }
 
     /**
