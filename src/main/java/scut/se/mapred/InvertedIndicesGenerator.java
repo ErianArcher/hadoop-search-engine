@@ -37,13 +37,13 @@ public class InvertedIndicesGenerator {
     private static final HBaseOperator op = HBaseOperator.getInstance();
 
     public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> {
-        private Text filenameKey;
+        /*private Text filenameKey;
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             InputSplit split = context.getInputSplit();
             Path path = ((FileSplit) split).getPath();
             filenameKey = new Text(path.toString());
-        }
+        }*/
 
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
@@ -65,9 +65,15 @@ public class InvertedIndicesGenerator {
             String rowKey = RowKeyGenerator.getUUID();
             op.insertOneRowTo(TABLE_HI, info, rowKey);
             op.insertOneRowTo(TABLE_HI, content, rowKey);
+
+            // 优化1： 减少新建对象个数
+            Text key4Reducer = new Text();
+            Text value4Reducer = new Text();
             for (String word:
                  content.getWords()) {
-                context.write(new Text(word), new Text(rowKey));
+                key4Reducer.set(word);
+                value4Reducer.set(rowKey);
+                context.write(key4Reducer, value4Reducer);
             }
         }
     }
