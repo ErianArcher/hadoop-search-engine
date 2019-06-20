@@ -1,5 +1,6 @@
 package scut.se.dbutils;
 
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,6 +9,7 @@ import scut.se.entity.TestEntity;
 import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -32,6 +34,12 @@ public class HBaseOperatorTest {
     String expect3 = MessageFormat.format("({0}->({1}->{2},{3}->{4}),{5}->({6}->{7},{8}->{9}))",
             rowKey1, "testCol1", testEntity1.getTestCol1(), "testCol2", testEntity1.getTestCol2(),
             rowKey2, "testCol1", testEntity2.getTestCol1(), "testCol2", testEntity2.getTestCol2());
+
+    // 多线程写入相关
+    private static ConcurrentLinkedQueue<TestEntity> queue = new ConcurrentLinkedQueue<>();
+    private static int threadCount = 3;
+    private static CountDownLatch latch = new CountDownLatch(threadCount);
+    private static List<String> concurrentRowKeys = Collections.synchronizedList(new ArrayList<String>());
 
     private String getResult(Map<String, Map<String, String>> mapping) {
         Map<String, String> m1 = mapping.get(rowKey1);
@@ -123,5 +131,52 @@ public class HBaseOperatorTest {
         assertEquals(testEntity1, res);
         TestEntity resNull = operator.getColumnFamilyPOJOByRowKey(tableName, "nonExist", TestEntity.class);
         assertTrue(Objects.isNull(resNull));
+    }
+
+    @Test
+    public void multiThreadWriteTest() {
+        ExecutorService executor = Executors.newFixedThreadPool(5);
+
+        // 生成entity
+        List<TestEntity> entityList = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            TestEntity testEntity = new TestEntity("value" + String.valueOf(i) + String.valueOf(i), "value" + String.valueOf(i) + String.valueOf(i));
+            entityList.add(testEntity);
+        }
+        queue.addAll(entityList);
+
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(new DBWriter());
+        }
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        executor.shutdown();
+
+        for (String rowKey : concurrentRowKeys) {
+            TestEntity entity = operator.getColumnFamilyPOJOByRowKey(tableName, rowKey, TestEntity.class);
+            System.out.println("==================");
+            System.out.println(MessageFormat.format("Row key: {0}\nColumn1: {1}\nColumn2: {2}", rowKey, entity.getTestCol1(), entity.getTestCol2()));
+        }
+
+    }
+
+    class DBWriter implements Runnable {
+
+        @Override
+        public void run() {
+            while (!queue.isEmpty()) {
+                String rowKey = RowKeyGenerator.getUUID();
+                concurrentRowKeys.add(rowKey);
+                TestEntity entity;
+                entity = queue.poll();
+                if (entity != null)
+                    operator.insertOneRowTo(tableName, entity, rowKey);
+            }
+            latch.countDown();
+        }
     }
 }
