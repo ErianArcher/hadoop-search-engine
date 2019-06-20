@@ -24,7 +24,7 @@ public class SearchUtil {
             String rowKey = RowKeyGenerator.getHash(kw);
             InvertedIndex res = op.getColumnFamilyPOJOByRowKey(TableNameEnum.TABLE_SE, rowKey, InvertedIndex.class);
             return res;
-        }).collect(Collectors.toList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     public static Map<PageInfo, Integer> getResult(String sentence) {
