@@ -12,12 +12,14 @@ public class HTableUntil {
     }
 
     public static List<String> convertStrInCSV2List(String strsInCSV) {
-        return Arrays.stream(strsInCSV.split(","))
+        String strsInCSV_tmp = strsInCSV.replaceAll("\\[", "").replaceAll("]", "");
+        return Arrays.stream(strsInCSV_tmp.split(","))
                 .map(String::trim).collect(Collectors.toList());
     }
 
     public static List<Integer> convertIntInCSV2List(String intsInCSV) {
-        return Arrays.stream(intsInCSV.split(",")).map(String::trim)
+        String intsInCSV_tmp = intsInCSV.replaceAll("\\[", "").replaceAll("]", "");
+        return Arrays.stream(intsInCSV_tmp.split(",")).map(String::trim)
                 .map(Integer::parseInt).collect(Collectors.toList());
     }
 }
