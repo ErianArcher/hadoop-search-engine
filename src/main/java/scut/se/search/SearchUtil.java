@@ -4,6 +4,7 @@ import com.hankcs.hanlp.HanLP;
 import scut.se.dbutils.HBaseOperator;
 import scut.se.dbutils.RowKeyGenerator;
 import scut.se.dbutils.TableNameEnum;
+import scut.se.dbutils.Tuple;
 import scut.se.entity.InvertedIndex;
 import scut.se.entity.PageInfo;
 
@@ -27,7 +28,7 @@ public class SearchUtil {
         }).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
-    public static Map<PageInfo, Integer> getResult(String sentence) {
+    public static List<Tuple<PageInfo, Integer>> getResult(String sentence) {
         List<PageInfo> pages = new ArrayList<>();
         List<String> keywords = extractKeywordsFrom(sentence);
 
@@ -56,13 +57,13 @@ public class SearchUtil {
 
         });
 
-        return htmlNO2Score.entrySet().stream().flatMap(h2s -> {
+        return htmlNO2Score.entrySet().stream().map(h2s -> {
             HBaseOperator op = HBaseOperator.getInstance();
             String htmlNO = h2s.getKey();
-            Map<PageInfo, Integer> pi2s = new HashMap<>(1);
+            Tuple<PageInfo, Integer> pi2s = null;
             PageInfo pageInfo = op.getColumnFamilyPOJOByRowKey(TableNameEnum.TABLE_HI, htmlNO, PageInfo.class);
-            pi2s.put(pageInfo, h2s.getValue());
-            return pi2s.entrySet().stream();
-        }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            pi2s = new Tuple<>(pageInfo, h2s.getValue());
+            return pi2s;
+        }).collect(Collectors.toList());
     }
 }

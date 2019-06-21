@@ -2,10 +2,7 @@ package scut.se.search;
 
 import com.hankcs.hanlp.HanLP;
 import org.junit.*;
-import scut.se.dbutils.HBaseOperator;
-import scut.se.dbutils.HTableUntil;
-import scut.se.dbutils.RowKeyGenerator;
-import scut.se.dbutils.TableNameEnum;
+import scut.se.dbutils.*;
 import scut.se.entity.InvertedIndex;
 import scut.se.entity.PageContent;
 import scut.se.entity.PageInfo;
@@ -102,28 +99,11 @@ public class SearchUtilTest {
 
     @Test
     public void getResult() {
-        Map<PageInfo, Integer> res = SearchUtil.getResult(sentence);
-        for (Map.Entry<PageInfo, Integer> entry: res.entrySet()) {
-            PageInfo pageInfo = entry.getKey();
-            Integer score = entry.getValue();
+        List<Tuple<PageInfo, Integer>> res = SearchUtil.getResult(sentence);
+        for (Tuple<PageInfo, Integer> entry: res) {
+            PageInfo pageInfo = entry._1();
+            Integer score = entry._2();
             System.out.println(MessageFormat.format("url: {0}, title: {1}, score: {2}", pageInfo.getUrl(), pageInfo.getTitle(), score));
         }
-    }
-}
-
-class Tuple<X, Y> {
-    private final X x;
-    private final Y y;
-    public Tuple(X x, Y y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public X _1() {
-        return x;
-    }
-
-    public Y _2() {
-        return y;
     }
 }
