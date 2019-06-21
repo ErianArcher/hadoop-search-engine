@@ -31,6 +31,7 @@ public class SearchUtil {
     public static List<Tuple<PageInfo, Integer>> getResult(String sentence) {
         List<PageInfo> pages = new ArrayList<>();
         List<String> keywords = extractKeywordsFrom(sentence);
+        HBaseOperator op = HBaseOperator.getInstance();
 
         // 生成每个关键词的分数
         Map<String, Integer> kw2Score = new HashMap<>(keywords.size());
@@ -58,12 +59,11 @@ public class SearchUtil {
         });
 
         return htmlNO2Score.entrySet().stream().map(h2s -> {
-            HBaseOperator op = HBaseOperator.getInstance();
             String htmlNO = h2s.getKey();
             Tuple<PageInfo, Integer> pi2s = null;
             PageInfo pageInfo = op.getColumnFamilyPOJOByRowKey(TableNameEnum.TABLE_HI, htmlNO, PageInfo.class);
             pi2s = new Tuple<>(pageInfo, h2s.getValue());
             return pi2s;
-        }).collect(Collectors.toList());
+        }).sorted(Comparator.comparingInt(Tuple::_2)).collect(Collectors.toList()); // 增加排序
     }
 }
