@@ -25,16 +25,23 @@ import scut.se.mapred.completefile.NonSplittableTextInputFormat;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static scut.se.dbutils.TableNameEnum.TABLE_HI;
 import static scut.se.dbutils.TableNameEnum.TABLE_SE;
 
 public class InvertedIndicesGenerator {
     private static final HBaseOperator op = HBaseOperator.getInstance();
+
+    private static String isNullThenDefaultString(String target) {
+        return target == null? "": target;
+    }
+
+    private static String safeSubString(StringBuilder sb, int start) {
+        int length = sb.length();
+        if (length <= start) return "";
+        else return sb.substring(start);
+    }
 
     public static class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Text> {
         /*private Text filenameKey;
@@ -52,28 +59,33 @@ public class InvertedIndicesGenerator {
             PageJson pageJson = gson.fromJson(json, PageJson.class);
 
             // 准备写入HBase
+            if (!pageJson.getWords().isEmpty()) { // 首先判断是否为有效输入
+                PageInfo info = new PageInfo(isNullThenDefaultString(pageJson.getUrl()),
+                        isNullThenDefaultString(pageJson.getTitle()),
+                        isNullThenDefaultString(pageJson.getFilename()));
+                StringBuilder wordsInCSV = new StringBuilder();
 
-            PageInfo info = new PageInfo(pageJson.getUrl(), pageJson.getTitle(), pageJson.getFilename());
-            StringBuilder wordsInCSV = new StringBuilder();
-            for (String w :
-                    pageJson.getWords()) {
-                wordsInCSV.append(",");
-                wordsInCSV.append(w.trim().replaceAll(",", ""));
-            }
-            PageContent content = new PageContent(pageJson.getHtml(), wordsInCSV.substring(1));
-            // 生成rowKey
-            String rowKey = RowKeyGenerator.getUUID();
-            op.insertOneRowTo(TABLE_HI, info, rowKey);
-            op.insertOneRowTo(TABLE_HI, content, rowKey);
+                for (String w :
+                        pageJson.getWords()) {
+                    wordsInCSV.append(",");
+                    wordsInCSV.append(w.trim().replaceAll(",", ""));
+                }
+                PageContent content = new PageContent(isNullThenDefaultString(pageJson.getHtml()),
+                        safeSubString(wordsInCSV, 1));
+                // 生成rowKey
+                String rowKey = RowKeyGenerator.getUUID();
+                op.insertOneRowTo(TABLE_HI, info, rowKey);
+                op.insertOneRowTo(TABLE_HI, content, rowKey);
 
-            // 优化1： 减少新建对象个数
-            Text key4Reducer = new Text();
-            Text value4Reducer = new Text();
-            for (String word:
-                 content.getWords()) {
-                key4Reducer.set(word);
-                value4Reducer.set(rowKey);
-                context.write(key4Reducer, value4Reducer);
+                // 优化1： 减少新建对象个数
+                Text key4Reducer = new Text();
+                Text value4Reducer = new Text();
+                for (String word :
+                        content.getWords()) {
+                    key4Reducer.set(word);
+                    value4Reducer.set(rowKey);
+                    context.write(key4Reducer, value4Reducer);
+                }
             }
         }
     }
@@ -97,20 +109,23 @@ public class InvertedIndicesGenerator {
                 }
             }
 
-            StringBuilder htmlNOsInCSV = new StringBuilder();
-            StringBuilder countsInCSV = new StringBuilder();
-            for (Map.Entry<String, Integer> e: m.entrySet()) {
-                htmlNOsInCSV.append(",");
-                htmlNOsInCSV.append(e.getKey());
-                countsInCSV.append(",");
-                countsInCSV.append(e.getValue());
-            }
+            if (!m.entrySet().isEmpty()) {
+                StringBuilder htmlNOsInCSV = new StringBuilder();
+                StringBuilder countsInCSV = new StringBuilder();
+                for (Map.Entry<String, Integer> e : m.entrySet()) {
+                    htmlNOsInCSV.append(",");
+                    htmlNOsInCSV.append(e.getKey());
+                    countsInCSV.append(",");
+                    countsInCSV.append(e.getValue());
+                }
 
-            InvertedIndex invertedIndex = new InvertedIndex(key.toString(), htmlNOsInCSV.substring(1), countsInCSV.substring(1));
-            String rowKey = RowKeyGenerator.getHash(key.toString());
-            op.insertOneRowTo(TABLE_SE, invertedIndex, rowKey);
-            /* Emit word and [file1→count of the word1 in file1 , file2→count of the word1 in file2 ………] as output*/
-            context.write(key, new Text(m.toString()));
+                InvertedIndex invertedIndex = new InvertedIndex(key.toString(), safeSubString(htmlNOsInCSV, 1),
+                        safeSubString(countsInCSV, 1));
+                String rowKey = RowKeyGenerator.getHash(key.toString());
+                op.insertOneRowTo(TABLE_SE, invertedIndex, rowKey);
+                /* Emit word and [file1→count of the word1 in file1 , file2→count of the word1 in file2 ………] as output*/
+                context.write(key, new Text(m.toString()));
+            }
         }
     }
 
