@@ -64,6 +64,6 @@ public class SearchUtil {
             PageInfo pageInfo = op.getColumnFamilyPOJOByRowKey(TableNameEnum.TABLE_HI, htmlNO, PageInfo.class);
             pi2s = new Tuple<>(pageInfo, h2s.getValue());
             return pi2s;
-        }).sorted(Comparator.comparingInt(Tuple::_2)).collect(Collectors.toList()); // 增加排序
+        }).sorted(Comparator.comparing(Tuple::_2, (last, cur) -> cur -last)).collect(Collectors.toList()); // 增加排序
     }
 }
