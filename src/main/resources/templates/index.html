@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+        body {
+            margin-top: 100px;
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>MOVIE SPIDER</h1>
+    <form action="#" th:action="@{/search}" th:object="${searchEntry}" method="post">
+        <input type="text" th:field="*{searchText}" />
+        <input type="submit" value="搜索一下" id = "search">
+    </form>
+<!--    <p th:text="${searchEntry.searchText}"></p>-->
+</body>
+</html>

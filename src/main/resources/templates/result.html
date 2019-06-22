@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <form action="#" th:action="@{/search}" th:object="${searchEntry}" method="post">
+        <input type="text" th:field="*{searchText}" />
+        <input type="submit" value="搜索一下" id = "search">
+    </form>
+    <ul th:each="entries,stat:${showList}" style="list-style-type:none">
+        <li>
+            <a th:href="${entries.url}" th:text="${entries.title}"></a>
+        </li>
+    </ul>
+</body>
+</html>

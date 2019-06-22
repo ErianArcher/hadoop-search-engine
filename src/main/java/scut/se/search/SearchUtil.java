@@ -66,4 +66,15 @@ public class SearchUtil {
             return pi2s;
         }).sorted(Comparator.comparing(Tuple::_2, (last, cur) -> cur -last)).collect(Collectors.toList()); // 增加排序
     }
+
+    public static List<Tuple<PageInfo, Integer>> getFeakerResult(String sentence) {
+        List<Tuple<PageInfo, Integer>> resList = new ArrayList<>();
+        resList.add(new Tuple<PageInfo, Integer>(new PageInfo("http://feaker.com", "feakerTitle", "feakerFilename"), 3));
+        resList.add(new Tuple<PageInfo, Integer>(new PageInfo("http://feaker.com", "feakerTitle", "feakerFilename"), 3));
+        resList.add(new Tuple<PageInfo, Integer>(new PageInfo("http://feaker.com", "feakerTitle", "feakerFilename"), 3));
+        resList.add(new Tuple<PageInfo, Integer>(new PageInfo("http://feaker.com", "feakerTitle", "feakerFilename"), 3));
+        resList.add(new Tuple<PageInfo, Integer>(new PageInfo("http://feaker.com", "feakerTitle", "feakerFilename"), 3));
+
+        return resList;
+    }
 }
