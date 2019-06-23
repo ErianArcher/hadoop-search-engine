@@ -1,5 +1,6 @@
 package scut.se.mapred;
 
+import com.google.gson.reflect.TypeToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -23,12 +24,13 @@ import scut.se.mapred.completefile.NonSplittableTextInputFormat;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.lang.reflect.Type;
 
 import static scut.se.dbutils.TableNameEnum.TABLE_HI;
 import static scut.se.dbutils.TableNameEnum.TABLE_SE;
 
 public class InvertedIndicesGenerator {
-    private static final HBaseOperator op = HBaseOperator.getInstance();
+    //private static final HBaseOperator op = HBaseOperator.getInstance();
 
     private static String isNullThenDefaultString(String target) {
         return target == null? "": target;
@@ -51,37 +53,44 @@ public class InvertedIndicesGenerator {
 
         @Override
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-            String json = new String(value.copyBytes(), 0, value.getLength(), StandardCharsets.UTF_8);
+            Type listType = new TypeToken<ArrayList<PageJson>>(){}.getType();
+            StringBuilder jsonsb = new StringBuilder();
+            jsonsb.append("[");
+            jsonsb.append(new String(value.copyBytes(), 0, value.getLength(), StandardCharsets.UTF_8));
+            jsonsb.deleteCharAt(jsonsb.length()-1);
+            jsonsb.append("]");
             Gson gson = new Gson();
-            PageJson pageJson = gson.fromJson(json, PageJson.class);
+            List<PageJson> pageJsonList = gson.fromJson(jsonsb.toString(), listType);
 
             // 准备写入HBase
-            if (!pageJson.getWords().isEmpty()) { // 首先判断是否为有效输入
-                PageInfo info = new PageInfo(isNullThenDefaultString(pageJson.getUrl()),
-                        isNullThenDefaultString(pageJson.getTitle()),
-                        isNullThenDefaultString(pageJson.getFilename()));
-                StringBuilder wordsInCSV = new StringBuilder();
+            for (PageJson pageJson : pageJsonList) {
+                if (!pageJson.getWords().isEmpty()) { // 首先判断是否为有效输入
+                    PageInfo info = new PageInfo(isNullThenDefaultString(pageJson.getUrl()),
+                            isNullThenDefaultString(pageJson.getTitle()),
+                            isNullThenDefaultString(pageJson.getFilename()));
+                    StringBuilder wordsInCSV = new StringBuilder();
 
-                for (String w :
-                        pageJson.getWords()) {
-                    wordsInCSV.append(",");
-                    wordsInCSV.append(w.trim().replaceAll(",", ""));
-                }
-                PageContent content = new PageContent(isNullThenDefaultString(pageJson.getHtml()),
-                        safeSubString(wordsInCSV, 1));
-                // 生成rowKey
-                String rowKey = RowKeyGenerator.getUUID();
-                op.insertOneRowTo(TABLE_HI, info, rowKey);
-                op.insertOneRowTo(TABLE_HI, content, rowKey);
+                    for (String w :
+                            pageJson.getWords()) {
+                        wordsInCSV.append(",");
+                        wordsInCSV.append(w.trim().replaceAll(",", ""));
+                    }
+                    PageContent content = new PageContent(isNullThenDefaultString(pageJson.getHtml()),
+                            safeSubString(wordsInCSV, 1));
+                    // 生成rowKey
+                    String rowKey = RowKeyGenerator.getUUID();
+                    //op.insertOneRowTo(TABLE_HI, info, rowKey);
+                    //op.insertOneRowTo(TABLE_HI, content, rowKey);
 
-                // 优化1： 减少新建对象个数
-                Text key4Reducer = new Text();
-                Text value4Reducer = new Text();
-                for (String word :
-                        content.getWords()) {
-                    key4Reducer.set(word);
-                    value4Reducer.set(rowKey);
-                    context.write(key4Reducer, value4Reducer);
+                    // 优化1： 减少新建对象个数
+                    Text key4Reducer = new Text();
+                    Text value4Reducer = new Text();
+                    for (String word :
+                            content.getWords()) {
+                        key4Reducer.set(word);
+                        value4Reducer.set(rowKey);
+                        context.write(key4Reducer, value4Reducer);
+                    }
                 }
             }
         }
@@ -119,7 +128,7 @@ public class InvertedIndicesGenerator {
                 InvertedIndex invertedIndex = new InvertedIndex(key.toString(), safeSubString(htmlNOsInCSV, 1),
                         safeSubString(countsInCSV, 1));
                 String rowKey = RowKeyGenerator.getHash(key.toString());
-                op.insertOneRowTo(TABLE_SE, invertedIndex, rowKey);
+                //op.insertOneRowTo(TABLE_SE, invertedIndex, rowKey);
                 /* Emit word and [file1→count of the word1 in file1 , file2→count of the word1 in file2 ………] as output*/
                 context.write(key, new Text(m.toString()));
             }
@@ -128,12 +137,12 @@ public class InvertedIndicesGenerator {
 
     public static void main(String[] args) throws Exception {
         // 查看是否已建表
-        if (!HTableUntil.checkTableExist(TABLE_SE)) {
+        /*if (!HTableUntil.checkTableExist(TABLE_SE)) {
             op.createTable(TABLE_SE, Collections.singletonList(InvertedIndex.class.getName()));
         }
         if (!HTableUntil.checkTableExist(TABLE_HI)) {
             op.createTable(TABLE_HI, Arrays.asList(PageContent.class.getName(), PageInfo.class.getName()));
-        }
+        }*/
 
         Configuration conf= new Configuration();
         Job job = Job.getInstance(conf,"InvertedIndexJob");

@@ -14,7 +14,7 @@ import java.util.List;
 @Controller
 public class IndexController {
 
-    public class SearchEntry {
+    class SearchEntry {
 
         private String searchText;
 
@@ -33,15 +33,14 @@ public class IndexController {
 
     @GetMapping("/index")
     public String index(Model model) {
-        model.addAttribute("searchEntry",new SearchEntry());
         return "index";
     }
 
     @PostMapping("/search")
     public String search(@ModelAttribute SearchEntry se, Model model) {
-        List<Tuple<PageInfo, Integer>> resultList = SearchUtil.getFeakerResult(se.searchText);
+        List<Tuple<PageInfo, Integer>> resultList = SearchUtil.getResult(se.searchText);
         List<PageInfo> showList = new ArrayList<>();
-        for (int i = 0; i < resultList.size(); i++) {
+        for (int i = 0; i < 50; i++) {
             showList.add(resultList.get(i)._1());
         }
         model.addAttribute("showList", showList);

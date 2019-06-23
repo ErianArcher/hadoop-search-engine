@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
@@ -15,7 +15,7 @@
 <body>
     <h1>MOVIE SPIDER</h1>
     <form action="#" th:action="@{/search}" th:object="${searchEntry}" method="post">
-        <input type="text" th:field="*{searchText}" />
+        <input type="text" name="searchText" />
         <input type="submit" value="搜索一下" id = "search">
     </form>
 <!--    <p th:text="${searchEntry.searchText}"></p>-->

@@ -39,7 +39,10 @@ public class CompleteFileRecordReader extends RecordReader<LongWritable, Text>{
             try {
                 in = fs.open(file);
                 IOUtils.readFully(in, contents, 0, contents.length);
-                value.set(new String(contents, 0, value.getLength(), StandardCharsets.UTF_8));
+                StringBuilder sb = new StringBuilder();
+                sb.append(new String(contents, 0, contents.length, StandardCharsets.UTF_8));
+                sb.append(",");
+                value.set(sb.toString());
             } finally {
                 IOUtils.closeStream(in);
             }
