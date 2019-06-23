@@ -30,7 +30,7 @@ import static scut.se.dbutils.TableNameEnum.TABLE_HI;
 import static scut.se.dbutils.TableNameEnum.TABLE_SE;
 
 public class InvertedIndicesGenerator {
-    //private static final HBaseOperator op = HBaseOperator.getInstance();
+    private static final HBaseOperator op = HBaseOperator.getInstance();
 
     private static String isNullThenDefaultString(String target) {
         return target == null? "": target;
@@ -79,8 +79,8 @@ public class InvertedIndicesGenerator {
                             safeSubString(wordsInCSV, 1));
                     // 生成rowKey
                     String rowKey = RowKeyGenerator.getUUID();
-                    //op.insertOneRowTo(TABLE_HI, info, rowKey);
-                    //op.insertOneRowTo(TABLE_HI, content, rowKey);
+                    op.insertOneRowTo(TABLE_HI, info, rowKey);
+                    op.insertOneRowTo(TABLE_HI, content, rowKey);
 
                     // 优化1： 减少新建对象个数
                     Text key4Reducer = new Text();
@@ -128,7 +128,7 @@ public class InvertedIndicesGenerator {
                 InvertedIndex invertedIndex = new InvertedIndex(key.toString(), safeSubString(htmlNOsInCSV, 1),
                         safeSubString(countsInCSV, 1));
                 String rowKey = RowKeyGenerator.getHash(key.toString());
-                //op.insertOneRowTo(TABLE_SE, invertedIndex, rowKey);
+                op.insertOneRowTo(TABLE_SE, invertedIndex, rowKey);
                 /* Emit word and [file1→count of the word1 in file1 , file2→count of the word1 in file2 ………] as output*/
                 context.write(key, new Text(m.toString()));
             }
@@ -137,12 +137,12 @@ public class InvertedIndicesGenerator {
 
     public static void main(String[] args) throws Exception {
         // 查看是否已建表
-        /*if (!HTableUntil.checkTableExist(TABLE_SE)) {
+        if (!HTableUntil.checkTableExist(TABLE_SE)) {
             op.createTable(TABLE_SE, Collections.singletonList(InvertedIndex.class.getName()));
         }
         if (!HTableUntil.checkTableExist(TABLE_HI)) {
             op.createTable(TABLE_HI, Arrays.asList(PageContent.class.getName(), PageInfo.class.getName()));
-        }*/
+        }
 
         Configuration conf= new Configuration();
         Job job = Job.getInstance(conf,"InvertedIndexJob");
