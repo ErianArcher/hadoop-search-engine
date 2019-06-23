@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 
 public class CompleteFileRecordReader extends RecordReader<LongWritable, Text>{
 
@@ -19,10 +20,14 @@ public class CompleteFileRecordReader extends RecordReader<LongWritable, Text>{
     private Configuration conf;
     private Text value = new Text();
     private boolean processed = false;
+    private long key = 0L;
+
     @Override
     public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
         this.fileSplit = (FileSplit) split;
         this.conf = context.getConfiguration();
+        Random random = new Random();
+        key = random.nextLong();
     }
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
@@ -45,7 +50,7 @@ public class CompleteFileRecordReader extends RecordReader<LongWritable, Text>{
     }
     @Override
     public LongWritable getCurrentKey() throws IOException, InterruptedException {
-        return new LongWritable();
+        return new LongWritable(this.key);
     }
     @Override
     public Text getCurrentValue() throws IOException, InterruptedException {

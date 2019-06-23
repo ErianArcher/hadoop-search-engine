@@ -4,23 +4,20 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hbase.thirdparty.com.google.gson.Gson;
 import scut.se.dbutils.HBaseOperator;
 import scut.se.dbutils.HTableUntil;
 import scut.se.dbutils.RowKeyGenerator;
-import scut.se.dbutils.TableNameEnum;
 import scut.se.entity.InvertedIndex;
 import scut.se.entity.PageContent;
 import scut.se.entity.PageInfo;
 import scut.se.entity.PageJson;
-import scut.se.mapred.completefile.CompleteFileInputFormat;
+import scut.se.mapred.completefile.CombineCompleteFileInputFormat;
 import scut.se.mapred.completefile.NonSplittableTextInputFormat;
 
 import java.io.IOException;
@@ -149,11 +146,11 @@ public class InvertedIndicesGenerator {
         //Defining the output value class for the reducer
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
-        job.setInputFormatClass(NonSplittableTextInputFormat.class);
+        job.setInputFormatClass(CombineCompleteFileInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
         Path outputPath = new Path(args[1]);
 
-        CompleteFileInputFormat.setInputPaths(job, new Path(args[0]));
+        CombineCompleteFileInputFormat.setInputPaths(job, new Path(args[0]));
 
         FileOutputFormat.setOutputPath(job, outputPath);
         //deleting the output path automatically from hdfs so that we don't have delete it explicitly
